@@ -2,20 +2,24 @@ import pandas as pd
 import glob
 import os
 
-def consolidar_e_limpar(nome_portal, pasta_origem="data/raw"):
-    padrao = os.path.join(pasta_origem, f"{nome_portal}_*.csv")
-    arquivos = glob.glob(padrao)
+def consolidar_novos_dados(nome_portal):
+    # Pega tanto o arquivo final quanto os backups do portal no dia
+    padrao_final = os.path.join("data/raw", f"{nome_portal}_*.csv")
+    padrao_bkp = os.path.join("data/raw", f"backup_{nome_portal}_*.csv")
+    
+    arquivos = glob.glob(padrao_final) + glob.glob(padrao_bkp)
     
     if not arquivos:
         return None
     
-    print(f"📂 Consolidando {len(arquivos)} arquivos de {nome_portal}...")
+    print(f"📂 Lendo {len(arquivos)} arquivos brutos novos...")
     dfs = [pd.read_csv(f) for f in arquivos]
-    df_total = pd.concat(dfs, ignore_index=True)
+    df_bruto = pd.concat(dfs, ignore_index=True)
     
-    # Limpeza de duplicatas por URL (mantendo a primeira aparição)
-    total_antes = len(df_total)
-    df_limpo = df_total.drop_duplicates(subset=['url'], keep='first')
+    # Contagem de duplicadas
+    total_antes = len(df_bruto)
+    df_unico = df_bruto.drop_duplicates(subset=['url'], keep='last')
+    duplicadas = total_antes - len(df_unico)
     
-    print(f"♻️ Duplicatas removidas: {total_antes - len(df_limpo)}")
-    return df_limpo
+    print(f"♻️  Duplicatas removidas na união do RAW: {duplicadas}")
+    return df_unico

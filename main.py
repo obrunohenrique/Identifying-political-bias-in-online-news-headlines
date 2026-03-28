@@ -1,52 +1,59 @@
 import os
+import shutil
 import pandas as pd
-from modules.data_handler import consolidar_e_limpar
+from modules.data_handler import consolidar_novos_dados
 from modules.noise_killer import remover_ruido
 from modules.llm_judge import rotular_vies
 
-def executar_pipeline(nome_portal):
-    print(f"\n🚀 Iniciando Pipeline para: {nome_portal.upper()}")
+def executar_pipeline_incremental(nome_portal):
+    print(f"\n--- PIPELINE INCREMENTAL: {nome_portal.upper()} ---")
     
-    # --- PASSO 1: CONSOLIDAÇÃO E LIMPEZA DE DUPLICADAS ---
-    df_bruto = consolidar_e_limpar(nome_portal, pasta_origem="data/raw")
-    
-    if df_bruto is None or df_bruto.empty:
-        print(f"❌ Erro: Nenhum arquivo '{nome_portal}_*.csv' encontrado em data/raw.")
+    # 1. PEGAR NOVOS DADOS
+    df_novos = consolidar_novos_dados(nome_portal)
+    if df_novos is None or df_novos.empty:
+        print("☕ Nada novo para processar.")
         return
 
-    # --- PASSO 2: ELIMINAÇÃO DE RUÍDO (POLÍTICA VS OUTROS) ---
-    print(f"🧹 Filtrando conteúdo não-político via Llama 3.1...")
-    df_limpo = remover_ruido(df_bruto)
-    
-    # SALVAMENTO OBRIGATÓRIO NA PASTA PROCESSED
-    # Este arquivo é o seu "Gold Standard" sem rótulos.
-    caminho_processed = f"data/processed/{nome_portal}.csv"
-    df_limpo.to_csv(caminho_processed, index=False)
-    
-    total_instancias = len(df_limpo)
-    print(f"✅ Etapa concluída! Dataset limpo salvo em: {caminho_processed}")
-    print(f"📊 Volume final de política: {total_instancias} instâncias.")
+    # 2. FILTRAR RUÍDO (Barra de progresso aparece aqui)
+    print(f"🧠 Llama 3.1 analisando relevância dos novos dados...")
+    df_novos_limpos = remover_ruido(df_novos)
 
-    # --- VERIFICAÇÃO DE RESTRIÇÃO (TRAVA DE SEGURANÇA) ---
-    if total_instancias < 500:
-        print(f"⚠️  RESTRIÇÃO: Dataset com menos de 500 linhas.")
-        print(f"🛑 A rotulagem para '{nome_portal}' foi abortada para preservar recursos.")
+    # 3. UNIR COM O QUE JÁ ESTAVA NA PASTA PROCESSED
+    path_proc = f"data/processed/{nome_portal}.csv"
+    if os.path.exists(path_proc):
+        df_antigo = pd.read_csv(path_proc)
+        df_consolidado = pd.concat([df_antigo, df_novos_limpos], ignore_index=True)
+        # Limpeza final para garantir que nada escapou
+        df_consolidado = df_consolidado.drop_duplicates(subset=['url'], keep='first')
+    else:
+        df_consolidado = df_novos_limpos
+
+    # 4. SALVAR E ARQUIVAR
+    df_consolidado.to_csv(path_proc, index=False)
+    print(f"💾 Base de dados processada atualizada! Total: {len(df_consolidado)} linhas.")
+
+    # Mover arquivos usados para Archive para não reprocessar na próxima vez
+    arquivar_raw(nome_portal)
+
+    # 5. VERIFICAR META DE 500 PARA ROTULAR
+    total_total = len(df_consolidado)
+    if total_total < 500:
+        print(f"⚠️  Volume atual: {total_total}/500. Continue o scraping!")
         return
 
-    # --- PASSO 3: ROTULAGEM (LLM-AS-A-JUDGE) ---
-    print(f"⚖️ Iniciando rotulagem de viés (Esquerda/Direita/Neutro)...")
-    df_final = rotular_vies(df_limpo)
-    
-    # SALVAMENTO NA PASTA LABELED
-    caminho_labeled = f"data/labeled/{nome_portal}_labeled.csv"
-    df_final.to_csv(caminho_labeled, index=False)
-    
-    print(f"✨ SUCESSO! Dataset rotulado disponível em: {caminho_labeled}")
+    # 6. ROTULAGEM (Barra de progresso aparece aqui)
+    print(f"⚖️ Alvo atingido! Iniciando Juiz de Viés...")
+    df_labeled = rotular_vies(df_consolidado)
+    df_labeled.to_csv(f"data/labeled/{nome_portal}_labeled.csv", index=False)
+    print("✨ SUCESSO! Dataset final pronto para o BERTimbau.")
+
+def arquivar_raw(nome_portal):
+    os.makedirs("data/archive", exist_ok=True)
+    import glob
+    itens = glob.glob(f"data/raw/{nome_portal}_*.csv") + glob.glob(f"data/raw/backup_{nome_portal}_*.csv")
+    for f in itens:
+        shutil.move(f, os.path.join("data/archive", os.path.basename(f)))
 
 if __name__ == "__main__":
-    # Garante a estrutura de pastas necessária
-    for pasta in ["data/raw", "data/processed", "data/labeled"]:
-        os.makedirs(pasta, exist_ok=True)
-        
-    portal = input("Qual portal deseja processar agora? ").strip().lower()
-    executar_pipeline(portal)
+    portal = input("Qual portal processar? ").strip().lower()
+    executar_pipeline_incremental(portal)
