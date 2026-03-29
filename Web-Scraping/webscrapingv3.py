@@ -13,7 +13,9 @@ hoje = datetime.now()
 data_formatada = hoje.strftime('%d-%m-%y') 
 
 portais = [
-    {"nome": "g1", "url": "https://g1.globo.com/politica/"},
+    {"nome": "gazetadopovo", "url": "https://www.gazetadopovo.com.br/ultimas-noticias/"},
+    {"nome": "brasil247", "url": "https://www.brasil247.com/ultimas-noticias"},
+    {"nome": "cnnbrasil", "url": "https://www.cnnbrasil.com.br/politica/"},
 ]
 
 def extrair_dados_portal(nome_portal, url_base):
