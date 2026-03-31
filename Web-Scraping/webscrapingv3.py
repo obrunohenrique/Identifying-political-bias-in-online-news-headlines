@@ -6,16 +6,22 @@ import os
 from newspaper import Article, build
 
 # Garante que a pasta existe
-PATH_RAW = "../data/raw"
+PATH_RAW = "/data/raw"
 os.makedirs(PATH_RAW, exist_ok=True)
 
 hoje = datetime.now()
 data_formatada = hoje.strftime('%d-%m-%y') 
 
 portais = [
-    {"nome": "gazetadopovo", "url": "https://www.gazetadopovo.com.br/ultimas-noticias/"},
-    {"nome": "brasil247", "url": "https://www.brasil247.com/ultimas-noticias"},
-    {"nome": "cnnbrasil", "url": "https://www.cnnbrasil.com.br/politica/"},
+  
+    {"nome": "estadao", "url": "https://www.estadao.com.br/politica/"},
+    {"nome": "agencia_brasil", "url": "https://agenciabrasil.ebc.com.br/politica"},
+    
+    {"nome": "revista_forum", "url": "https://revistaforum.com.br/politica/"},
+    {"nome": "jornal_ggn", "url": "https://jornalggn.com.br/politica/"},
+    
+    {"nome": "jovem_pan", "url": "https://jovempan.com.br/noticias/politica/"},
+    {"nome": "brasil_sem_medo", "url": "https://brasilsemmedo.com/politica/"}
 ]
 
 def extrair_dados_portal(nome_portal, url_base):
