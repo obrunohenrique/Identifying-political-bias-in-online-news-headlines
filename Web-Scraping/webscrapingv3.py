@@ -6,7 +6,7 @@ import os
 from newspaper import Article, build
 
 # Garante que a pasta existe
-PATH_RAW = "/data/raw"
+PATH_RAW = "data/raw"
 os.makedirs(PATH_RAW, exist_ok=True)
 
 hoje = datetime.now()
