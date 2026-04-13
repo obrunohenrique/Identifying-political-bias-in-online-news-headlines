@@ -13,7 +13,6 @@ hoje = datetime.now()
 data_formatada = hoje.strftime('%d-%m-%y') 
 
 portais = [
-    {"nome": "gazetadopovo", "url": "https://www.gazetadopovo.com.br/ultimas-noticias/"},
     {"nome": "brasil247", "url": "https://www.brasil247.com/ultimas-noticias"},
     {"nome": "cnnbrasil", "url": "https://www.cnnbrasil.com.br/politica/"},
 ]
