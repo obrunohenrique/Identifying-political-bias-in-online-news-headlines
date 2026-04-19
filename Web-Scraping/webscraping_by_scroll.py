@@ -13,7 +13,6 @@ from datetime import datetime
 # =========================
 
 PORTAIS = [
-
     {
         "nome": "brasil247",
         "url": "https://www.brasil247.com/brasil",
@@ -197,33 +196,73 @@ async def coletar_links(config):
 # EXTRAÇÃO
 # =========================
 
-def extrair_artigos(links, nome_portal):
+async def extrair_artigos_async(links, nome_portal, config):
     print(f"\n--- Extraindo {nome_portal} ---")
 
     dados = []
     hoje = datetime.now().strftime('%d-%m-%y')
 
-    for i, url in enumerate(links):
-        try:
-            art = Article(url, language='pt')
-            art.download()
-            art.parse()
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=False,
+            args=["--disable-blink-features=AutomationControlled"]
+        )
 
-            dados.append({
-                "titulo": art.title,
-                "texto": art.text[:2000],
-                "data": art.publish_date,
-                "url": url,
-                "portal": nome_portal
-            })
+        page = await browser.new_page(user_agent="Mozilla/5.0")
 
-            print(f"[{i+1}/{len(links)}] {art.title[:60]}")
+        for i, url in enumerate(links):
+            try:
+                await page.goto(url, timeout=60000)
 
-            time.sleep(random.uniform(1, 3))
+                # =========================
+                # SUBTÍTULO (tentativas)
+                # =========================
 
-        except:
-            print(f"Erro em: {url[:60]}")
-            continue
+                subtitulo = None
+
+                # 1. meta description (mais confiável)
+                try:
+                    subtitulo = await page.get_attribute(
+                        "meta[name='description']", "content"
+                    )
+                except:
+                    pass
+
+                # 2. seletor customizado do portal
+                if not subtitulo and config.get("subtitulo_selector"):
+                    try:
+                        el = await page.query_selector(config["subtitulo_selector"])
+                        if el:
+                            subtitulo = await el.inner_text()
+                    except:
+                        pass
+
+                # =========================
+                # NEWSPAPER (texto + título)
+                # =========================
+
+                art = Article(url, language='pt')
+                art.download()
+                art.parse()
+
+                dados.append({
+                    "titulo": art.title,
+                    "subtitulo": subtitulo,
+                    "texto": art.text[:2000],
+                    "data": art.publish_date,
+                    "url": url,
+                    "portal": nome_portal
+                })
+
+                print(f"[{i+1}/{len(links)}] {art.title[:60]}")
+
+                await asyncio.sleep(random.uniform(1, 3))
+
+            except Exception as e:
+                print(f"Erro em: {url[:60]} | {e}")
+                continue
+
+        await browser.close()
 
     df = pd.DataFrame(dados)
     df.drop_duplicates(subset="url", inplace=True)
@@ -245,7 +284,7 @@ async def executar_todos():
             print(f"Nenhum link encontrado para {config['nome']}")
             continue
 
-        extrair_artigos(links, config["nome"])
+        await extrair_artigos_async(links, config["nome"], config)
 
 # =========================
 # EXECUÇÃO
