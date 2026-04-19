@@ -15,20 +15,10 @@ from datetime import datetime
 PORTAIS = [
 
     {
-        "nome": "ValorEconomico",
-        "url": "https://valor.globo.com/politica/",
-        "botao": "Veja mais",
-        "dominio": "valor.globo.com",
-        "tipo": "scroll",
-        "max_iter": 50,
-        "seletor": "a[href]"
-    },
-
-    {
-        "nome": "Poder360",
-        "url": "https://www.poder360.com.br/poder-governo/",
-        "botao": "Carregar Mais",
-        "dominio": "poder360.com.br",
+        "nome": "brasil247",
+        "url": "https://www.brasil247.com/brasil",
+        "botao": "carregar mais",
+        "dominio": "brasil247.com",
         "tipo": "scroll",
         "max_iter": 50,
         "seletor": "a[href]"
@@ -255,7 +245,7 @@ async def executar_todos():
             print(f"Nenhum link encontrado para {config['nome']}")
             continue
 
-        # extrair_artigos(links, config["nome"])
+        extrair_artigos(links, config["nome"])
 
 # =========================
 # EXECUÇÃO
