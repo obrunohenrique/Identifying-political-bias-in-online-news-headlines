@@ -2,7 +2,6 @@ import asyncio
 from playwright.async_api import async_playwright
 from newspaper import Article
 import pandas as pd
-import time
 import random
 from datetime import datetime
 
@@ -14,10 +13,10 @@ from datetime import datetime
 
 PORTAIS = [
     {
-        "nome": "brasil247",
-        "url": "https://www.brasil247.com/brasil",
-        "botao": "carregar mais",
-        "dominio": "brasil247.com",
+        "nome": "g1",
+        "url": "https://g1.globo.com/politica/",
+        "botao": "Mostrar mais",
+        "dominio": "g1.globo.com",
         "tipo": "scroll",
         "max_iter": 50,
         "seletor": "a[href]"

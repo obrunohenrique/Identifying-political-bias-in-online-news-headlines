@@ -16,10 +16,10 @@ def consolidar_novos_dados(nome_portal):
     dfs = [pd.read_csv(f) for f in arquivos]
     df_bruto = pd.concat(dfs, ignore_index=True)
     
-    # Contagem de duplicadas
+    # Contagem de duplicadas baseada no TÍTULO
     total_antes = len(df_bruto)
-    df_unico = df_bruto.drop_duplicates(subset=['url'], keep='last')
+    df_unico = df_bruto.drop_duplicates(subset=['titulo'], keep='last')
     duplicadas = total_antes - len(df_unico)
     
-    print(f"♻️  Duplicatas removidas na união do RAW: {duplicadas}")
+    print(f"♻️  Duplicatas removidas na união do RAW (por título): {duplicadas}")
     return df_unico
